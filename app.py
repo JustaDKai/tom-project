@@ -4,9 +4,9 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
 def allowed_file(filename):
@@ -19,12 +19,15 @@ def allowed_file(filename):
 
 @app.route("/")
 def home():
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
     files = os.listdir(app.config["UPLOAD_FOLDER"])
     return render_template("index.html", files=files)
 
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
+    print("UPLOAD ROUTE HIT")
+
     if "file" not in request.files:
         return "No file part in the request", 400
 
@@ -33,12 +36,13 @@ def upload_file():
     if file.filename == "":
         return "No file selected", 400
 
-    if file and allowed_file(file.filename):
-        file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-        file.save(file_path)
-        return redirect(url_for("home"))
+    if not allowed_file(file.filename):
+        return "File type is not allowed. Please upload png, jpg, jpeg, or gif.", 400
 
-    return "File type is not allowed", 400
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+    file.save(file_path)
+
+    return redirect(url_for("home"))
 
 
 @app.route("/download/<filename>")
@@ -55,7 +59,11 @@ def health():
     return "OK"
 
 
+@app.route("/devops")
+def devops():
+    return "Tom is learning DevOps"
+
+
 if __name__ == "__main__":
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.run(host="0.0.0.0", port=5000)
-
