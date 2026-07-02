@@ -1,0 +1,28 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Use Python 3.12'
+  inputs:
+    versionSpec: '3.12'
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install Python dependencies'
+
+- script: |
+    python -m py_compile app.py
+  displayName: 'Check Python syntax'
+
+- script: |
+    python - <<'PY'
+    from app import app
+    print("Flask app imported successfully")
+    print(app)
+    PY
+  displayName: 'Import Flask app'
