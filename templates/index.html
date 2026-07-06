@@ -8,7 +8,7 @@
 
     <h2>Upload Image</h2>
 
-    /upload
+    <form method="POST" action="/upload" enctype="multipart/form-data">
         <input type="file" name="file" accept=".png,.jpg,.jpeg,.gif">
         <button type="submit">Upload</button>
     </form>
@@ -23,7 +23,7 @@
             <li>
                 {{ file }}
                 -
-                /download/{{ file }}Download</a>
+                <a href="/download/{{ file }}">Download</a>
             </li>
         {% endfor %}
         </ul>
