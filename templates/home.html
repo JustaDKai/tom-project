@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Tools Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <h1>Email Support Tools</h1>
+            <p>Select the tool you want to use.</p>
+        </section>
+
+        <section class="home-grid">
+            <a class="card home-card" href="{{ url_for('generator') }}">
+                <h2>Template Generator</h2>
+                <p>Generate email drafts from saved templates and case details.</p>
+            </a>
+
+            <a class="card home-card" href="{{ url_for('manage_templates') }}">
+                <h2>Template Manager</h2>
+                <p>Add, edit, or delete reusable email body templates.</p>
+            </a>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,11 +1,13 @@
 import json
+import re
 from pathlib import Path
 from collections import defaultdict
 from urllib.parse import quote
 
-from flask import Flask, render_template, request
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 app = Flask(__name__)
+app.secret_key = "template-manager-dev-secret"
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -75,6 +77,13 @@ def save_templates(templates):
         json.dump(templates, file, indent=2, ensure_ascii=False)
 
 
+def slugify(text):
+    text = text.strip().lower()
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    text = text.strip("_")
+    return text or "custom_template"
+
+
 class SafeDict(defaultdict):
     def __missing__(self, key):
         return "{" + key + "}"
@@ -130,8 +139,13 @@ def generate_email(data, templates=None):
     return body
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def home():
+    return render_template("home.html")
+
+
+@app.route("/generator", methods=["GET", "POST"])
+def generator():
     generated_body = ""
     mailto_link = ""
     templates = load_templates()
@@ -162,6 +176,95 @@ def home():
         form_data=form_data,
         generated_body=generated_body,
         mailto_link=mailto_link
+    )
+
+
+@app.route("/manager", methods=["GET", "POST"])
+def manage_templates():
+    templates = load_templates()
+
+    selected_key = (
+        request.args.get("template_key")
+        or request.form.get("template_key")
+        or "welcome"
+    )
+
+    if selected_key not in templates:
+        selected_key = next(iter(templates.keys()))
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "save_existing":
+            template_key = request.form.get("template_key", "").strip()
+            template_label = request.form.get("template_label", "").strip()
+            template_body = request.form.get("template_body", "")
+
+            if not template_key:
+                flash("Template key is missing.")
+                return redirect(url_for("manage_templates"))
+
+            if not template_label:
+                template_label = template_key
+
+            templates[template_key] = {
+                "label": template_label,
+                "body": template_body
+            }
+
+            save_templates(templates)
+            flash("Template saved successfully.")
+            return redirect(url_for("manage_templates", template_key=template_key))
+
+        if action == "add_new":
+            new_label = request.form.get("new_template_label", "").strip()
+            new_key = request.form.get("new_template_key", "").strip()
+            new_body = request.form.get("new_template_body", "")
+
+            if not new_key:
+                new_key = slugify(new_label)
+
+            if not new_label:
+                new_label = new_key
+
+            templates[new_key] = {
+                "label": new_label,
+                "body": new_body
+            }
+
+            save_templates(templates)
+            flash("New template added successfully.")
+            return redirect(url_for("manage_templates", template_key=new_key))
+
+        if action == "delete":
+            template_key = request.form.get("template_key", "").strip()
+
+            if template_key in templates and len(templates) > 1:
+                templates.pop(template_key)
+                save_templates(templates)
+
+                next_key = next(iter(templates.keys()))
+                flash("Template deleted.")
+                return redirect(url_for("manage_templates", template_key=next_key))
+
+            flash("Cannot delete the last template.")
+            return redirect(url_for("manage_templates", template_key=template_key))
+
+        if action == "import_defaults":
+            for key, value in DEFAULT_TEMPLATES.items():
+                templates.setdefault(key, value)
+
+            save_templates(templates)
+            flash("Default templates imported.")
+            return redirect(url_for("manage_templates", template_key=selected_key))
+
+    selected_template = templates[selected_key]
+
+    return render_template(
+        "template_manager.html",
+        templates=templates,
+        selected_key=selected_key,
+        selected_template=selected_template
     )
 
 
