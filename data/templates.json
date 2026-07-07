@@ -1,0 +1,30 @@
+{
+  "welcome": {
+    "label": "Welcome email",
+    "body": "hello, testing for the welcome email"
+  },
+  "closure_confirmation": {
+    "label": "Closure confirmation",
+    "body": ""
+  },
+  "strike_1": {
+    "label": "Strike 1 follow-up",
+    "body": ""
+  },
+  "strike_2": {
+    "label": "Strike 2 follow-up",
+    "body": ""
+  },
+  "strike_3": {
+    "label": "Strike 3 temporary archive",
+    "body": ""
+  },
+  "Test1": {
+    "label": "Test1.1",
+    "body": "Test1.1.1"
+  },
+  "Test_2": {
+    "label": "Test_2.1",
+    "body": "Test 2.1.1"
+  }
+}

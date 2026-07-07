@@ -3,10 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Email Template Generator</title>
-</head>
-<head>
-    <meta charset="UTF-8">
-    <title>Email Template Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -43,11 +39,6 @@
                     <div>
                         <label>Case ID</label>
                         <input name="case_id" value="{{ form_data.case_id }}" placeholder="Example: 2507010040001234">
-                    </div>
-
-                    <div>
-                        <label>Subject</label>
-                        <input name="subject" value="{{ form_data.subject }}" placeholder="Write subject here">
                     </div>
                 </div>
 
@@ -94,34 +85,33 @@
                 <button type="submit">Generate email</button>
             </form>
 
+            {% if generated_body %}
             <section class="card output-card">
                 <h2>Generated email</h2>
 
-                {% if generated_subject or generated_body %}
-                    <label>Subject</label>
-                    <input id="subjectBox" value="{{ generated_subject }}" readonly>
+                <label>Body</label>
+                <textarea id="bodyBox" readonly>{{ generated_body }}</textarea>
 
-                    <label>Body</label>
-                    <textarea id="bodyBox" readonly>{{ generated_body }}</textarea>
-
-                    <div class="actions">
-                        <button type="button" onclick="copyEmail()">Copy email</button>
-                        {{ mailto_link }}Open mail client</a>
-                    </div>
-                {% else %}
-                    <p class="empty-state">Nothing generated yet. Fill the form and select Generate email.</p>
-                {% endif %}
+                <div class="actions">
+                    <button type="button" onclick="copyEmail()">Copy email</button>
+                    {% if mailto_link %}
+                    <a class="secondary-button" href="{{ mailto_link }}">Open mail client</a>
+                    {% endif %}
+                </div>
             </section>
+            {% else %}
+            <section class="card output-card">
+                <h2>Generated email</h2>
+                <p class="empty-state">Nothing generated yet. Fill the form and select Generate email.</p>
+            </section>
+            {% endif %}
         </section>
     </main>
 
     <script>
         function copyEmail() {
-            const subject = document.getElementById("subjectBox").value;
             const body = document.getElementById("bodyBox").value;
-            const fullText = "Subject: " + subject + "\n\n" + body;
-
-            navigator.clipboard.writeText(fullText).then(function () {
+            navigator.clipboard.writeText(body).then(function () {
                 alert("Email copied to clipboard.");
             });
         }

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Template Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+<main class="page">
+
+    <section class="hero">
+        <h1>Template Manager</h1>
+        <p>Add, edit, delete, and save reusable email body templates.</p>
+    </section>
+
+    <section class="layout single-column">
+
+        <section class="card">
+            <h2>Edit existing template</h2>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="message-box">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <label>Select template</label>
+            <select onchange="window.location='{{ url_for('manage_templates') }}?template_key=' + this.value">
+                {% for key, template in templates.items() %}
+                    <option value="{{ key }}" {% if selected_key == key %}selected{% endif %}>
+                        {{ template.label }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <form method="post">
+                <input type="hidden" name="action" value="save_existing">
+                <input type="hidden" name="template_key" value="{{ selected_key }}">
+
+                <label>Template key</label>
+                <input value="{{ selected_key }}" disabled>
+
+                <label>Template label</label>
+                <input name="template_label" value="{{ selected_template.label }}" placeholder="Example: Strike 1 follow-up">
+
+                <label>Email body template</label>
+                <textarea name="template_body" class="template-textarea" placeholder="Write email body here.">{{ selected_template.body }}</textarea>
+
+                <div class="placeholder-box">
+                    <h3>Available placeholders</h3>
+                    <p>You can use these inside the email body:</p>
+                    <ul>
+                        <li>{customer_name}</li>
+                        <li>{customer_role}</li>
+                        <li>{case_id}</li>
+                        <li>{engineer_name}</li>
+                        <li>{engineer_role}</li>
+                        <li>{working_hours}</li>
+                        <li>{backup_email}</li>
+                        <li>{manager_name}</li>
+                    </ul>
+                </div>
+
+                <div class="actions">
+                    <button type="submit">Save template</button>
+                </div>
+            </form>
+
+            <form method="post">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="template_key" value="{{ selected_key }}">
+                <button type="submit" class="danger-button">Delete selected template</button>
+            </form>
+
+            <form method="post">
+                <input type="hidden" name="action" value="import_defaults">
+                <button type="submit" class="secondary-button">Import default template list</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Add new template</h2>
+
+            <form method="post">
+                <input type="hidden" name="action" value="add_new">
+
+                <label>New template key</label>
+                <input name="new_template_key" placeholder="Example: custom_follow_up">
+
+                <label>New template label</label>
+                <input name="new_template_label" placeholder="Example: Custom follow-up">
+
+                <label>Email body template</label>
+                <textarea name="new_template_body" class="template-textarea" placeholder="Write email body here."></textarea>
+
+                <button type="submit">Add template</button>
+            </form>
+        </section>
+
+    </section>
+
+</main>
+</body>
+</html>

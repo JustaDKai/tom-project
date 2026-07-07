@@ -1,39 +1,40 @@
-from flask import Flask, render_template, request
-from urllib.parse import quote
+import json
+from pathlib import Path
 from collections import defaultdict
+from urllib.parse import quote
+
+from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-TEMPLATE_LIBRARY = {
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+TEMPLATE_FILE = DATA_DIR / "templates.json"
+
+DEFAULT_TEMPLATES = {
     "welcome": {
         "label": "Welcome email",
-        "subject": "",
         "body": ""
     },
     "closure_confirmation": {
         "label": "Closure confirmation",
-        "subject": "",
         "body": ""
     },
     "strike_1": {
         "label": "Strike 1 follow-up",
-        "subject": "",
         "body": ""
     },
     "strike_2": {
         "label": "Strike 2 follow-up",
-        "subject": "",
         "body": ""
     },
     "strike_3": {
         "label": "Strike 3 temporary archive",
-        "subject": "",
         "body": ""
     }
 }
 
-
-SIGNATURE_TEMPLATE = """Best regards,
+SIGNATURE_TEMPLATE = """Warm regards,
 
 {engineer_name}
 {engineer_role}
@@ -41,6 +42,37 @@ Working Hours: {working_hours}
 Backup contact: {backup_email}
 Manager: {manager_name}
 """
+
+
+def ensure_template_file():
+    DATA_DIR.mkdir(exist_ok=True)
+
+    if not TEMPLATE_FILE.exists():
+        save_templates(DEFAULT_TEMPLATES)
+
+
+def load_templates():
+    ensure_template_file()
+
+    with TEMPLATE_FILE.open("r", encoding="utf-8") as file:
+        templates = json.load(file)
+
+    for key, value in DEFAULT_TEMPLATES.items():
+        if key not in templates:
+            templates[key] = value
+
+    for key, template in templates.items():
+        template.setdefault("label", key)
+        template.setdefault("body", "")
+
+    return templates
+
+
+def save_templates(templates):
+    DATA_DIR.mkdir(exist_ok=True)
+
+    with TEMPLATE_FILE.open("w", encoding="utf-8") as file:
+        json.dump(templates, file, indent=2, ensure_ascii=False)
 
 
 class SafeDict(defaultdict):
@@ -75,17 +107,16 @@ def build_signature(data):
     return SIGNATURE_TEMPLATE.format_map(SafeDict(str, signature_data))
 
 
-def generate_email(data):
-    template_type = data.get("template_type", "welcome")
-    selected_template = TEMPLATE_LIBRARY.get(template_type, TEMPLATE_LIBRARY["welcome"])
+def generate_email(data, templates=None):
+    templates = templates or load_templates()
 
-    subject_input = data.get("subject", "").strip()
+    template_type = data.get("template_type", "welcome")
+    selected_template = templates.get(template_type, templates.get("welcome", {"label": "Welcome email", "body": ""}))
+
     body_input = data.get("email_body", "").strip()
 
-    subject_template = selected_template.get("subject", "")
     body_template = selected_template.get("body", "")
 
-    subject = subject_input or apply_placeholders(subject_template, data)
     body = body_input or apply_placeholders(body_template, data)
 
     signature = build_signature(data)
@@ -96,21 +127,20 @@ def generate_email(data):
         else:
             body = signature
 
-    return subject, body
+    return body
 
 
 @app.route("/", methods=["GET", "POST"])
 def home():
-    generated_subject = ""
     generated_body = ""
     mailto_link = ""
+    templates = load_templates()
 
     form_data = {
         "template_type": "welcome",
         "customer_name": "",
         "customer_role": "",
         "case_id": "",
-        "subject": "",
         "email_body": "",
         "engineer_name": "",
         "engineer_role": "",
@@ -122,21 +152,14 @@ def home():
 
     if request.method == "POST":
         form_data.update(request.form.to_dict())
-        generated_subject, generated_body = generate_email(form_data)
+        generated_body = generate_email(form_data, templates=templates)
 
-        mailto_link = (
-            "mailto:"
-            "?subject="
-            + quote(generated_subject)
-            + "&body="
-            + quote(generated_body)
-        )
+        mailto_link = "mailto:?body=" + quote(generated_body) if generated_body else ""
 
     return render_template(
         "index.html",
-        templates=TEMPLATE_LIBRARY,
+        templates=templates,
         form_data=form_data,
-        generated_subject=generated_subject,
         generated_body=generated_body,
         mailto_link=mailto_link
     )
